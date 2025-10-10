@@ -55,7 +55,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Permitir que $(PRODUCT_NAME) use tu ubicación."
         }
-      ]
+      ],
+      "expo-router"
     ]
   }
 }

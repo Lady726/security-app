@@ -1,21 +1,21 @@
 // src/screens/user/MapScreen.js
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  StyleSheet,
-  ActivityIndicator,
-  TouchableOpacity,
-  Text,
-  Modal,
-  ScrollView,
-  Image,
-  Dimensions,
-} from 'react-native';
-import MapView, { PROVIDER_GOOGLE, Circle } from 'react-native-maps';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
-import { useReports } from '../../hooks/useReports';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+    ActivityIndicator,
+    Dimensions,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import MapMarker from '../../components/MapMarker';
+import { useReports } from '../../hooks/useReports';
 
 const { width, height } = Dimensions.get('window');
 
@@ -551,4 +551,4 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-  },
+  }});
