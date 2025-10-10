@@ -1,6 +1,6 @@
 // src/hooks/useReports.js
 import { useEffect, useState } from 'react';
-import { supabase } from '../src/config/supabase';
+import { supabase } from '../config/supabase';
 import { useAuth } from './useAuth';
 
 export const useReports = () => {
@@ -126,37 +126,103 @@ export const useReports = () => {
 
   const uploadReportImage = async (reportId, uri) => {
     try {
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const fileExt = uri.split('.').pop();
-      const fileName = `${reportId}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      console.log('=== INICIO SUBIDA ===');
+      console.log('Report ID:', reportId);
+      console.log('URI:', uri);
+      
+      // Determinar extensión del archivo
+      const fileExt = uri.split('.').pop().toLowerCase();
+      const mimeType = fileExt === 'png' ? 'image/png' : 
+                       fileExt === 'jpg' || fileExt === 'jpeg' ? 'image/jpeg' :
+                       fileExt === 'gif' ? 'image/gif' : 
+                       fileExt === 'webp' ? 'image/webp' : 'image/jpeg';
+      
+      console.log('Extensión:', fileExt, 'MIME:', mimeType);
+      
+      // Nombre único del archivo
+      const timestamp = Date.now();
+      const fileName = `${reportId}/${timestamp}.${fileExt}`;
+      console.log('Nombre archivo:', fileName);
+      
+  // Leer la URI como ArrayBuffer (React Native no tiene response.blob())
+const response = await fetch(uri);
+const arrayBuffer = await response.arrayBuffer(); // ✅ disponible en RN
+const finalBody = arrayBuffer; // Supabase acepta ArrayBuffer directamente
 
-      const { error: uploadError } = await supabase.storage
-        .from('report-images')
-        .upload(filePath, blob);
+// Subir a Supabase Storage
+const { data, error } = await supabase.storage
+  .from('report-images')
+  .upload(fileName, finalBody, {
+    contentType: mimeType,
+    cacheControl: '3600',
+    upsert: false,
+  });
 
-      if (uploadError) throw uploadError;
-
+      
+      if (error) {
+        console.error('ERROR STORAGE:', JSON.stringify(error, null, 2));
+        
+        // Si el error es de archivo duplicado, intentar con otro nombre
+        if (error.message && error.message.includes('already exists')) {
+          const newFileName = `${reportId}/${timestamp}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+          console.log('Intentando con nuevo nombre:', newFileName);
+          
+          const { data: retryData, error: retryError } = await supabase.storage
+            .from('report-images')
+            .upload(newFileName, finalBlob, {
+              contentType: mimeType,
+              cacheControl: '3600',
+              upsert: false,
+            });
+          
+          if (retryError) throw retryError;
+          
+          // Actualizar fileName para obtener la URL correcta
+          Object.assign(data || {}, retryData);
+          fileName = newFileName;
+        } else {
+          throw error;
+        }
+      }
+      
+      console.log('STORAGE OK:', data);
+      
+      // Obtener URL pública
       const { data: { publicUrl } } = supabase.storage
         .from('report-images')
-        .getPublicUrl(filePath);
-
-      const { data, error } = await supabase
+        .getPublicUrl(fileName);
+      
+      console.log('URL pública:', publicUrl);
+      
+      // Guardar referencia en la base de datos
+      const { data: dbData, error: dbError } = await supabase
         .from('report_images')
-        .insert([
-          {
-            report_id: reportId,
-            image_url: publicUrl,
-          },
-        ])
+        .insert({ 
+          report_id: reportId, 
+          image_url: publicUrl 
+        })
         .select()
         .single();
-
-      if (error) throw error;
-      return { data, error: null };
+      
+      if (dbError) {
+        console.error('ERROR DB:', JSON.stringify(dbError, null, 2));
+        
+        // Si hubo error en DB, intentar eliminar el archivo de storage
+        await supabase.storage
+          .from('report-images')
+          .remove([fileName]);
+        
+        throw dbError;
+      }
+      
+      console.log('DB OK:', dbData);
+      console.log('=== FIN SUBIDA EXITOSA ===');
+      
+      return { data: dbData, error: null };
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error('=== ERROR COMPLETO ===');
+      console.error('Mensaje:', error.message || 'Error desconocido');
+      console.error('Detalles:', error);
       return { data: null, error };
     }
   };
