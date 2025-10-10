@@ -1,6 +1,7 @@
-// src/screens/user/MapScreen.js
+// app/(tabs)/map.js
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -13,13 +14,29 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
-import { useReports } from '../../../hooks/useReports';
-import MapMarker from '../../components/MapMarker';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { useReports } from '../../hooks/useReports';
 
 const { width, height } = Dimensions.get('window');
 
-export default function MapScreen({ navigation }) {
+const CATEGORY_ICONS = {
+  robo: 'account-cash',
+  asalto: 'alert-octagon',
+  vandalismo: 'hammer-wrench',
+  sospechoso: 'account-alert',
+  otro: 'alert-circle',
+};
+
+const CATEGORY_COLORS = {
+  robo: '#FF3B30',
+  asalto: '#FF9500',
+  vandalismo: '#FFCC00',
+  sospechoso: '#007AFF',
+  otro: '#8E8E93',
+};
+
+export default function MapScreen() {
+  const router = useRouter();
   const mapRef = useRef(null);
   const [location, setLocation] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -61,6 +78,13 @@ export default function MapScreen({ navigation }) {
       setLoading(false);
     } catch (error) {
       console.error('Error getting location:', error);
+      // Ubicación por defecto (Bogotá)
+      setLocation({
+        latitude: 4.6097,
+        longitude: -74.0817,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
+      });
       setLoading(false);
     }
   };
@@ -151,13 +175,25 @@ export default function MapScreen({ navigation }) {
         showsMyLocationButton={false}
         showsCompass
       >
-        {filteredReports.map((report) => (
-          <MapMarker
-            key={report.id}
-            report={report}
-            onPress={() => setSelectedReport(report)}
-          />
-        ))}
+        {filteredReports.map((report) => {
+          const iconName = CATEGORY_ICONS[report.category] || 'alert-circle';
+          const color = CATEGORY_COLORS[report.category] || '#8E8E93';
+          
+          return (
+            <Marker
+              key={report.id}
+              coordinate={{
+                latitude: parseFloat(report.latitude),
+                longitude: parseFloat(report.longitude),
+              }}
+              onPress={() => setSelectedReport(report)}
+            >
+              <View style={[styles.markerContainer, { backgroundColor: color }]}>
+                <MaterialCommunityIcons name={iconName} size={24} color="#fff" />
+              </View>
+            </Marker>
+          );
+        })}
       </MapView>
 
       {/* Botón de centrar en usuario */}
@@ -278,16 +314,6 @@ export default function MapScreen({ navigation }) {
                     </Text>
                   </View>
                 </View>
-
-                <TouchableOpacity
-                  style={styles.viewDetailsButton}
-                  onPress={() => {
-                    setSelectedReport(null);
-                    navigation.navigate('ReportDetails', { reportId: selectedReport.id });
-                  }}
-                >
-                  <Text style={styles.viewDetailsButtonText}>Ver detalles completos</Text>
-                </TouchableOpacity>
               </View>
             </ScrollView>
           </View>
@@ -297,7 +323,7 @@ export default function MapScreen({ navigation }) {
       {/* Botón flotante para crear reporte */}
       <TouchableOpacity
         style={styles.fabButton}
-        onPress={() => navigation.navigate('CreateReport')}
+        onPress={() => router.push('/(tabs)/create-report')}
       >
         <Ionicons name="add" size={32} color="#fff" />
       </TouchableOpacity>
@@ -348,6 +374,23 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  markerContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   centerButton: {
     position: 'absolute',
@@ -541,14 +584,4 @@ const styles = StyleSheet.create({
     color: '#666',
     fontWeight: '600',
   },
-  viewDetailsButton: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  viewDetailsButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  }});
+});

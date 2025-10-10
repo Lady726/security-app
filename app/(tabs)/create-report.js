@@ -2,6 +2,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
@@ -14,7 +15,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { useReports } from '../../../hooks/useReports';
+import { useReports } from '../../hooks/useReports';
 
 const CATEGORIES = [
   { value: 'robo', label: 'Robo', icon: 'wallet-outline', color: '#FF3B30' },
@@ -35,6 +36,7 @@ export default function CreateReportScreen({ navigation }) {
   const [gettingLocation, setGettingLocation] = useState(false);
 
   const { createReport, uploadReportImage } = useReports();
+  const router = useRouter();
 
   useEffect(() => {
     getCurrentLocation();
@@ -184,7 +186,7 @@ export default function CreateReportScreen({ navigation }) {
         [
           {
             text: 'OK',
-            onPress: () => navigation.goBack(),
+            onPress: () => router.back(),
           },
         ]
       );

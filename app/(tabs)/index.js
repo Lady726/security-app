@@ -11,10 +11,10 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { useAuth } from '../../hooks/useAuth';
+import { useReports } from '../../hooks/useReports';
 import ReportCard from '../../src/components/ReportCard';
 import { supabase } from '../../src/config/supabase';
-import { useAuth } from '../../src/hooks/useAuth';
-import { useReports } from '../../src/hooks/useReports';
 
 export default function HomeScreen() {
   const router = useRouter();

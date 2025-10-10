@@ -1,6 +1,7 @@
-// src/screens/user/ProfileScreen.js
+// app/(tabs)/profile.js
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
     Alert,
@@ -12,10 +13,11 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { useAuth } from '../../../hooks/useAuth';
-import { supabase } from '../../config/supabase';
+import { useAuth } from '../../hooks/useAuth';
+import { supabase } from '../../src/config/supabase';
 
-export default function ProfileScreen({ navigation }) {
+export default function ProfileScreen() {
+  const router = useRouter();
   const { user, profile, signOut, updateProfile } = useAuth();
   const [editing, setEditing] = useState(false);
   const [fullName, setFullName] = useState(profile?.full_name || '');
@@ -123,7 +125,7 @@ export default function ProfileScreen({ navigation }) {
       icon: 'document-text-outline',
       title: 'Mis Reportes',
       subtitle: 'Ver todos tus reportes',
-      onPress: () => navigation.navigate('MyReports'),
+      onPress: () => Alert.alert('Próximamente', 'Funcionalidad en desarrollo'),
     },
     {
       icon: 'notifications-outline',

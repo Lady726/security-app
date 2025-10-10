@@ -2,7 +2,7 @@
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { AuthProvider, useAuth } from '../src/hooks/useAuth';
+import { AuthProvider, useAuth } from '../hooks/useAuth';
 
 function RootLayoutNav() {
   const { user, loading } = useAuth();

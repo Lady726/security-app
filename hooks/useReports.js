@@ -1,6 +1,6 @@
 // src/hooks/useReports.js
 import { useEffect, useState } from 'react';
-import { supabase } from '../config/supabase';
+import { supabase } from '../src/config/supabase';
 import { useAuth } from './useAuth';
 
 export const useReports = () => {
