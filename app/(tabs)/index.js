@@ -3,18 +3,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    RefreshControl,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import { supabase } from '../../config/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { useReports } from '../../hooks/useReports';
 import ReportCard from '../../src/components/ReportCard';
-import { supabase } from '../../src/config/supabase';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -94,14 +94,21 @@ export default function HomeScreen() {
   );
 
   const renderHeader = () => (
-    <View style={styles.header}>
-      <View>
-        <Text style={styles.greeting}>¡Hola!</Text>
-        <Text style={styles.subtitle}>Mantente informado sobre tu zona</Text>
+    <>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.greeting}>¡Hola!</Text>
+          <Text style={styles.subtitle}>Mantente informado sobre tu zona</Text>
+        </View>
+        <TouchableOpacity 
+          style={styles.myReportsButton}
+          onPress={() => router.push('/my-reports')}
+        >
+          <Ionicons name="document-text" size={24} color="#007AFF" />
+        </TouchableOpacity>
       </View>
-    </View>
+    </>
   );
-
   const renderFilters = () => (
     <View style={styles.filtersContainer}>
       <FlatList
@@ -226,7 +233,18 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 20,
+  },
+  myReportsButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#E3F2FD',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   greeting: {
     fontSize: 28,

@@ -1,19 +1,19 @@
-// src/screens/user/CreateReportScreen.js
+// app/(tabs)/create-report.js
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useReports } from '../../hooks/useReports';
 
@@ -25,7 +25,8 @@ const CATEGORIES = [
   { value: 'otro', label: 'Otro', icon: 'ellipsis-horizontal', color: '#8E8E93' },
 ];
 
-export default function CreateReportScreen({ navigation }) {
+export default function CreateReportScreen() {
+  const router = useRouter();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -36,7 +37,6 @@ export default function CreateReportScreen({ navigation }) {
   const [gettingLocation, setGettingLocation] = useState(false);
 
   const { createReport, uploadReportImage } = useReports();
-  const router = useRouter();
 
   useEffect(() => {
     getCurrentLocation();
@@ -158,6 +158,7 @@ export default function CreateReportScreen({ navigation }) {
 
     try {
       setLoading(true);
+      console.log('🚀 Creando reporte...');
 
       // Crear el reporte
       const { data: report, error: reportError } = await createReport({
@@ -170,31 +171,83 @@ export default function CreateReportScreen({ navigation }) {
       });
 
       if (reportError) {
+        console.error('❌ Error al crear reporte:', reportError);
         throw reportError;
       }
 
+      console.log('✅ Reporte creado:', report);
+
       // Subir imágenes si hay
       if (images.length > 0 && report) {
-        for (const imageUri of images) {
-          await uploadReportImage(report.id, imageUri);
+        console.log(`📸 Subiendo ${images.length} imagen(es)...`);
+        
+        let uploadedCount = 0;
+        let failedCount = 0;
+
+        for (let i = 0; i < images.length; i++) {
+          const imageUri = images[i];
+          console.log(`📤 Subiendo imagen ${i + 1}/${images.length}`);
+          
+          const { error: imageError } = await uploadReportImage(report.id, imageUri);
+          
+          if (imageError) {
+            console.error(`❌ Error al subir imagen ${i + 1}:`, imageError);
+            failedCount++;
+          } else {
+            console.log(`✅ Imagen ${i + 1} subida correctamente`);
+            uploadedCount++;
+          }
+        }
+
+        console.log(`📊 Resumen: ${uploadedCount} exitosas, ${failedCount} fallidas`);
+
+        if (failedCount > 0) {
+          Alert.alert(
+            'Reporte creado',
+            `Tu reporte fue creado pero ${failedCount} imagen(es) no se pudieron subir.`,
+            [{ text: 'OK', onPress: () => resetForm() }]
+          );
+          return;
         }
       }
 
+      // Mostrar mensaje de éxito
       Alert.alert(
-        'Éxito',
-        'Tu reporte ha sido enviado y está pendiente de moderación',
+        '¡Reporte Creado! ✅',
+        'Tu reporte ha sido enviado exitosamente y está pendiente de aprobación por un moderador. Mientras tanto, puedes verlo en "Mis Reportes".',
         [
           {
-            text: 'OK',
-            onPress: () => router.back(),
+            text: 'Ver Mis Reportes',
+            onPress: () => {
+              resetForm();
+              router.push('/(tabs)/profile'); // Cambiar a la pestaña de perfil
+            },
+          },
+          {
+            text: 'Crear Otro',
+            onPress: () => resetForm(false),
           },
         ]
       );
     } catch (error) {
-      console.error('Error creating report:', error);
-      Alert.alert('Error', 'No se pudo crear el reporte. Intenta de nuevo.');
+      console.error('❌ Error general:', error);
+      Alert.alert(
+        'Error', 
+        `No se pudo crear el reporte: ${error.message || 'Error desconocido'}`
+      );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const resetForm = (goHome = true) => {
+    setTitle('');
+    setDescription('');
+    setCategory('');
+    setImages([]);
+    getCurrentLocation(); // Refrescar ubicación
+    if (goHome) {
+      router.push('/(tabs)');
     }
   };
 

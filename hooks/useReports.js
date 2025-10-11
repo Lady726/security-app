@@ -16,16 +16,33 @@ export const useReports = () => {
       .channel('reports_changes')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'reports' },
+        { event: '*', schema: 'public', table: 'reports', filter: 'is_approved=eq.true' },
         (payload) => {
+          console.log('📡 Cambio en reportes:', payload);
+          
           if (payload.eventType === 'INSERT') {
-            setReports((prev) => [payload.new, ...prev]);
+            // Cargar el reporte completo con sus relaciones
+            fetchSingleReport(payload.new.id).then((report) => {
+              if (report) {
+                setReports((prev) => [report, ...prev]);
+              }
+            });
           } else if (payload.eventType === 'UPDATE') {
-            setReports((prev) =>
-              prev.map((report) =>
-                report.id === payload.new.id ? payload.new : report
-              )
-            );
+            // Si un reporte fue aprobado, agregarlo a la lista
+            if (payload.new.is_approved && !payload.old.is_approved) {
+              fetchSingleReport(payload.new.id).then((report) => {
+                if (report) {
+                  setReports((prev) => [report, ...prev]);
+                }
+              });
+            } else {
+              // Actualizar reporte existente
+              setReports((prev) =>
+                prev.map((report) =>
+                  report.id === payload.new.id ? { ...report, ...payload.new } : report
+                )
+              );
+            }
           } else if (payload.eventType === 'DELETE') {
             setReports((prev) =>
               prev.filter((report) => report.id !== payload.old.id)
@@ -40,9 +57,41 @@ export const useReports = () => {
     };
   }, []);
 
+  const fetchSingleReport = async (reportId) => {
+    try {
+      const { data, error } = await supabase
+        .from('reports')
+        .select(`
+          *,
+          profiles:user_id (
+            id,
+            full_name,
+            avatar_url
+          ),
+          report_images (
+            id,
+            image_url
+          ),
+          likes (count),
+          reviews (count)
+        `)
+        .eq('id', reportId)
+        .eq('is_approved', true)
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching single report:', error);
+      return null;
+    }
+  };
+
   const fetchReports = async () => {
     try {
       setLoading(true);
+      console.log('📥 Fetching reports...');
+      
       const { data, error } = await supabase
         .from('reports')
         .select(`
@@ -62,10 +111,17 @@ export const useReports = () => {
         .eq('is_approved', true)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching reports:', error);
+        throw error;
+      }
+      
+      console.log(`✅ Fetched ${data?.length || 0} approved reports`);
+      console.log('📊 Sample report:', data?.[0]);
+      
       setReports(data || []);
     } catch (error) {
-      console.error('Error fetching reports:', error);
+      console.error('❌ Error fetching reports:', error);
     } finally {
       setLoading(false);
     }
@@ -130,7 +186,7 @@ export const useReports = () => {
       console.log('Report ID:', reportId);
       console.log('URI:', uri);
       
-      // Determinar extensión del archivo
+      // Determinar extensión y tipo MIME
       const fileExt = uri.split('.').pop().toLowerCase();
       const mimeType = fileExt === 'png' ? 'image/png' : 
                        fileExt === 'jpg' || fileExt === 'jpeg' ? 'image/jpeg' :
@@ -144,45 +200,45 @@ export const useReports = () => {
       const fileName = `${reportId}/${timestamp}.${fileExt}`;
       console.log('Nombre archivo:', fileName);
       
-  // Leer la URI como ArrayBuffer (React Native no tiene response.blob())
-const response = await fetch(uri);
-const arrayBuffer = await response.arrayBuffer(); // ✅ disponible en RN
-const finalBody = arrayBuffer; // Supabase acepta ArrayBuffer directamente
-
-// Subir a Supabase Storage
-const { data, error } = await supabase.storage
-  .from('report-images')
-  .upload(fileName, finalBody, {
-    contentType: mimeType,
-    cacheControl: '3600',
-    upsert: false,
-  });
-
+      // Método alternativo: usar XMLHttpRequest para leer el archivo
+      const blob = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.onload = function() {
+          resolve(xhr.response);
+        };
+        xhr.onerror = function() {
+          reject(new Error('Error al leer el archivo'));
+        };
+        xhr.responseType = 'blob';
+        xhr.open('GET', uri, true);
+        xhr.send(null);
+      });
+      
+      console.log('Blob creado:', blob.size, 'bytes');
+      
+      // Convertir blob a ArrayBuffer y luego a Uint8Array
+      const arrayBuffer = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(blob);
+      });
+      
+      const bytes = new Uint8Array(arrayBuffer);
+      console.log('Bytes creados:', bytes.length);
+      
+      // Subir a Storage
+      const { data, error } = await supabase.storage
+        .from('report-images')
+        .upload(fileName, bytes, {
+          contentType: mimeType,
+          cacheControl: '3600',
+          upsert: false,
+        });
       
       if (error) {
         console.error('ERROR STORAGE:', JSON.stringify(error, null, 2));
-        
-        // Si el error es de archivo duplicado, intentar con otro nombre
-        if (error.message && error.message.includes('already exists')) {
-          const newFileName = `${reportId}/${timestamp}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-          console.log('Intentando con nuevo nombre:', newFileName);
-          
-          const { data: retryData, error: retryError } = await supabase.storage
-            .from('report-images')
-            .upload(newFileName, finalBlob, {
-              contentType: mimeType,
-              cacheControl: '3600',
-              upsert: false,
-            });
-          
-          if (retryError) throw retryError;
-          
-          // Actualizar fileName para obtener la URL correcta
-          Object.assign(data || {}, retryData);
-          fileName = newFileName;
-        } else {
-          throw error;
-        }
+        throw error;
       }
       
       console.log('STORAGE OK:', data);
@@ -192,26 +248,17 @@ const { data, error } = await supabase.storage
         .from('report-images')
         .getPublicUrl(fileName);
       
-      console.log('URL pública:', publicUrl);
+      console.log('URL:', publicUrl);
       
-      // Guardar referencia en la base de datos
+      // Guardar en DB
       const { data: dbData, error: dbError } = await supabase
         .from('report_images')
-        .insert({ 
-          report_id: reportId, 
-          image_url: publicUrl 
-        })
+        .insert({ report_id: reportId, image_url: publicUrl })
         .select()
         .single();
       
       if (dbError) {
         console.error('ERROR DB:', JSON.stringify(dbError, null, 2));
-        
-        // Si hubo error en DB, intentar eliminar el archivo de storage
-        await supabase.storage
-          .from('report-images')
-          .remove([fileName]);
-        
         throw dbError;
       }
       
@@ -221,8 +268,7 @@ const { data, error } = await supabase.storage
       return { data: dbData, error: null };
     } catch (error) {
       console.error('=== ERROR COMPLETO ===');
-      console.error('Mensaje:', error.message || 'Error desconocido');
-      console.error('Detalles:', error);
+      console.error(error.message || error);
       return { data: null, error };
     }
   };
@@ -330,3 +376,4 @@ const { data, error } = await supabase.storage
     getReportReviews,
   };
 };
+
