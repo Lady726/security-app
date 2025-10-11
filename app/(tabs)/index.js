@@ -100,15 +100,29 @@ export default function HomeScreen() {
           <Text style={styles.greeting}>¡Hola!</Text>
           <Text style={styles.subtitle}>Mantente informado sobre tu zona</Text>
         </View>
-        <TouchableOpacity 
-          style={styles.myReportsButton}
-          onPress={() => router.push('/my-reports')}
-        >
-          <Ionicons name="document-text" size={24} color="#007AFF" />
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity 
+            style={styles.reloadButton}
+            onPress={onRefresh}
+            disabled={refreshing}
+          >
+            <Ionicons 
+              name={refreshing ? "hourglass-outline" : "reload"} 
+              size={24} 
+              color="#007AFF" 
+            />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.myReportsButton}
+            onPress={() => router.push('/my-reports')}
+          >
+            <Ionicons name="document-text" size={24} color="#007AFF" />
+          </TouchableOpacity>
+        </View>
       </View>
     </>
   );
+
   const renderFilters = () => (
     <View style={styles.filtersContainer}>
       <FlatList
@@ -209,7 +223,6 @@ export default function HomeScreen() {
   );
 }
 
-// Estilos (los mismos que antes)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -237,6 +250,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  reloadButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#E3F2FD',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   myReportsButton: {
     width: 44,
