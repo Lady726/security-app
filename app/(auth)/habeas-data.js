@@ -127,7 +127,8 @@ export default function HabeasDataScreen() {
         <View style={styles.acceptanceBox}>
           <Ionicons name="shield-checkmark" size={48} color="#007AFF" />
           <Text style={styles.acceptanceText}>
-            Al usar esta aplicación, usted acepta el tratamiento de sus datos personales de acuerdo con esta política.
+            Al usar esta aplicación, usted acepta el tratamiento de sus datos personales de acuerdo con esta política y Ley 1581 
+            del 2012, lo cual garantiza el derecho fundamental de Habeas Data.
           </Text>
         </View>
       </ScrollView>
