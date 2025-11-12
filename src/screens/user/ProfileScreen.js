@@ -65,7 +65,7 @@ export default function ProfileScreen({ navigation }) {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
@@ -84,16 +84,48 @@ export default function ProfileScreen({ navigation }) {
     try {
       setLoading(true);
 
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const fileExt = uri.split('.').pop();
+      // Determinar extensión y tipo MIME
+      const fileExt = uri.split('.').pop().toLowerCase();
+      const mimeType = fileExt === 'png' ? 'image/png' :
+                       fileExt === 'jpg' || fileExt === 'jpeg' ? 'image/jpeg' :
+                       fileExt === 'gif' ? 'image/gif' :
+                       fileExt === 'webp' ? 'image/webp' : 'image/jpeg';
+
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
+
+      // Leer archivo usando XMLHttpRequest (compatible con React Native)
+      const blob = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.onload = function() {
+          resolve(xhr.response);
+        };
+        xhr.onerror = function() {
+          reject(new Error('Error al leer el archivo'));
+        };
+        xhr.responseType = 'blob';
+        xhr.open('GET', uri, true);
+        xhr.send(null);
+      });
+
+      // Convertir blob a ArrayBuffer y luego a Uint8Array
+      const arrayBuffer = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(blob);
+      });
+
+      const bytes = new Uint8Array(arrayBuffer);
 
       // Subir imagen
       const { error: uploadError } = await supabase.storage
         .from('report-images')
-        .upload(filePath, blob);
+        .upload(filePath, bytes, {
+          contentType: mimeType,
+          cacheControl: '3600',
+          upsert: false,
+        });
 
       if (uploadError) throw uploadError;
 

@@ -83,6 +83,14 @@ export default function LoginScreen() {
             </Text>
           </TouchableOpacity>
         </Link>
+
+        <Link href="/(auth)/habeas-data" asChild>
+          <TouchableOpacity style={styles.privacyLinkContainer}>
+            <Text style={styles.privacyLinkText}>
+              Política de Privacidad
+            </Text>
+          </TouchableOpacity>
+        </Link>
       </View>
     </KeyboardAvoidingView>
   );
@@ -137,5 +145,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
     fontSize: 14,
+  },
+  privacyLinkContainer: {
+    marginTop: 15,
+    paddingVertical: 10,
+  },
+  privacyLinkText: {
+    color: '#999',
+    textAlign: 'center',
+    fontSize: 12,
+    textDecorationLine: 'underline',
   },
 });

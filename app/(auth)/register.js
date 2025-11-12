@@ -13,6 +13,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
 
 export default function RegisterScreen() {
@@ -20,6 +21,7 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const router = useRouter();
@@ -27,6 +29,11 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     if (!fullName || !email || !password || !confirmPassword) {
       Alert.alert('Error', 'Por favor completa todos los campos');
+      return;
+    }
+
+    if (!acceptedTerms) {
+      Alert.alert('Error', 'Debes aceptar los términos de privacidad para continuar');
       return;
     }
 
@@ -96,6 +103,23 @@ export default function RegisterScreen() {
             onChangeText={setConfirmPassword}
             secureTextEntry
           />
+
+          <TouchableOpacity
+            style={styles.termsContainer}
+            onPress={() => setAcceptedTerms(!acceptedTerms)}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.checkbox, acceptedTerms && styles.checkboxChecked]}>
+              {acceptedTerms && <Ionicons name="checkmark" size={18} color="#fff" />}
+            </View>
+            <Text style={styles.termsText}>
+              Acepto la{' '}
+              <Link href="/(auth)/habeas-data" asChild>
+                <Text style={styles.termsLink}>política de privacidad</Text>
+              </Link>
+              {' '}y el tratamiento de mis datos personales
+            </Text>
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.button}
@@ -174,5 +198,34 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
     fontSize: 14,
+  },
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 15,
+    marginBottom: 5,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  checkboxChecked: {
+    backgroundColor: '#007AFF',
+  },
+  termsText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
+  },
+  termsLink: {
+    color: '#007AFF',
+    fontWeight: '600',
   },
 });

@@ -14,11 +14,10 @@ function RootLayoutNav() {
 
     const inAuthGroup = segments[0] === '(auth)';
     const inTabsGroup = segments[0] === '(tabs)';
-    const inAdminGroup = segments[0] === '(admin)';
 
     if (!user && !inAuthGroup) {
-      // Redirigir a login si no está autenticado
-      router.replace('/(auth)/login');
+      // Redirigir a welcome si no está autenticado
+      router.replace('/(auth)/welcome');
     } else if (user && inAuthGroup) {
       // Redirigir a tabs si está autenticado
       router.replace('/(tabs)');
@@ -33,7 +32,6 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="(admin)" options={{ headerShown: false }} />
     </Stack>
   );
 }

@@ -14,6 +14,7 @@ import {
     View,
 } from 'react-native';
 import { useAuth } from '../hooks/useAuth';
+import { useReports } from '../hooks/useReports';
 import { supabase } from '../src/config/supabase';
 
 const CATEGORY_COLORS = {
@@ -35,6 +36,7 @@ const CATEGORY_LABELS = {
 export default function MyReportsScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { updateReportStatus } = useReports();
   const [myReports, setMyReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -99,7 +101,7 @@ export default function MyReportsScreen() {
                 .eq('id', reportId);
 
               if (error) throw error;
-              
+
               setMyReports(myReports.filter((r) => r.id !== reportId));
               Alert.alert('Éxito', 'Reporte eliminado correctamente');
             } catch (error) {
@@ -109,6 +111,43 @@ export default function MyReportsScreen() {
         },
       ]
     );
+  };
+
+  const handleChangeStatus = (reportId, currentStatus) => {
+    const statusOptions = [
+      { label: 'Pendiente', value: 'pending' },
+      { label: 'En revisión', value: 'reviewing' },
+      { label: 'Resuelto', value: 'resolved' },
+      { label: 'Rechazado', value: 'rejected' },
+    ];
+
+    const buttons = statusOptions
+      .filter((option) => option.value !== currentStatus)
+      .map((option) => ({
+        text: option.label,
+        onPress: async () => {
+          try {
+            const { error } = await updateReportStatus(reportId, option.value);
+
+            if (error) throw error;
+
+            // Actualizar el reporte en la lista local
+            setMyReports(
+              myReports.map((r) =>
+                r.id === reportId ? { ...r, status: option.value } : r
+              )
+            );
+
+            Alert.alert('Éxito', `Estado actualizado a: ${option.label}`);
+          } catch (error) {
+            Alert.alert('Error', 'No se pudo actualizar el estado');
+          }
+        },
+      }));
+
+    buttons.push({ text: 'Cancelar', style: 'cancel' });
+
+    Alert.alert('Cambiar Estado', 'Selecciona el nuevo estado:', buttons);
   };
 
   const getFilteredReports = () => {
@@ -127,6 +166,8 @@ export default function MyReportsScreen() {
   const getStatusBadge = (report) => {
     if (report.is_approved) {
       return { label: 'Aprobado', color: '#34C759', icon: 'checkmark-circle' };
+    } else if (report.status === 'resolved') {
+      return { label: 'Resuelto', color: '#34C759', icon: 'checkmark-done-circle' };
     } else if (report.status === 'rejected') {
       return { label: 'Rechazado', color: '#FF3B30', icon: 'close-circle' };
     } else if (report.status === 'reviewing') {
@@ -212,6 +253,13 @@ export default function MyReportsScreen() {
 
           {/* Botones de acción */}
           <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.statusButton]}
+              onPress={() => handleChangeStatus(item.id, item.status)}
+            >
+              <Ionicons name="swap-horizontal-outline" size={18} color="#007AFF" />
+              <Text style={styles.statusButtonText}>Cambiar Estado</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionButton, styles.deleteButton]}
               onPress={() => handleDeleteReport(item.id)}
@@ -556,6 +604,14 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     borderRadius: 8,
+  },
+  statusButton: {
+    backgroundColor: '#E3F2FD',
+  },
+  statusButtonText: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   deleteButton: {
     backgroundColor: '#FFEBEE',

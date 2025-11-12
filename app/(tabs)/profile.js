@@ -18,7 +18,7 @@ import { supabase } from '../../src/config/supabase';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, profile, signOut, updateProfile } = useAuth();
+  const { user, profile, signOut, updateProfile, isAdmin } = useAuth();
   const [editing, setEditing] = useState(false);
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [phone, setPhone] = useState(profile?.phone || '');
@@ -67,7 +67,7 @@ export default function ProfileScreen() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
@@ -86,16 +86,48 @@ export default function ProfileScreen() {
     try {
       setLoading(true);
 
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const fileExt = uri.split('.').pop();
+      // Determinar extensión y tipo MIME
+      const fileExt = uri.split('.').pop().toLowerCase();
+      const mimeType = fileExt === 'png' ? 'image/png' :
+                       fileExt === 'jpg' || fileExt === 'jpeg' ? 'image/jpeg' :
+                       fileExt === 'gif' ? 'image/gif' :
+                       fileExt === 'webp' ? 'image/webp' : 'image/jpeg';
+
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
+
+      // Leer archivo usando XMLHttpRequest (compatible con React Native)
+      const blob = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.onload = function() {
+          resolve(xhr.response);
+        };
+        xhr.onerror = function() {
+          reject(new Error('Error al leer el archivo'));
+        };
+        xhr.responseType = 'blob';
+        xhr.open('GET', uri, true);
+        xhr.send(null);
+      });
+
+      // Convertir blob a ArrayBuffer y luego a Uint8Array
+      const arrayBuffer = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(blob);
+      });
+
+      const bytes = new Uint8Array(arrayBuffer);
 
       // Subir imagen
       const { error: uploadError } = await supabase.storage
         .from('report-images')
-        .upload(filePath, blob);
+        .upload(filePath, bytes, {
+          contentType: mimeType,
+          cacheControl: '3600',
+          upsert: false,
+        });
 
       if (uploadError) throw uploadError;
 
@@ -120,32 +152,58 @@ export default function ProfileScreen() {
     }
   };
 
-  const menuItems = [
-    {
-      icon: 'document-text-outline',
-      title: 'Mis Reportes',
-      subtitle: 'Ver todos tus reportes',
-      onPress: () => router.push('/my-reports'),
-    },
-    {
-      icon: 'notifications-outline',
-      title: 'Notificaciones',
-      subtitle: 'Configurar notificaciones',
-      onPress: () => Alert.alert('Próximamente', 'Esta función estará disponible pronto'),
-    },
-    {
-      icon: 'help-circle-outline',
-      title: 'Ayuda y Soporte',
-      subtitle: 'Obtén ayuda',
-      onPress: () => Alert.alert('Próximamente', 'Esta función estará disponible pronto'),
-    },
-    {
-      icon: 'information-circle-outline',
-      title: 'Acerca de',
-      subtitle: 'Versión 1.0.0',
-      onPress: () => Alert.alert('Sistema de Seguridad Ciudadana', 'Versión 1.0.0\n\nDesarrollado para mantener segura a tu comunidad.'),
-    },
-  ];
+  const getMenuItems = () => {
+    const items = [
+      {
+        icon: 'document-text-outline',
+        title: 'Mis Reportes',
+        subtitle: 'Ver todos tus reportes',
+        onPress: () => router.push('/my-reports'),
+      },
+    ];
+
+    // Agregar menú de administración si es admin
+    if (isAdmin) {
+      items.push({
+        icon: 'shield-checkmark',
+        title: 'Panel de Administración',
+        subtitle: 'Gestionar todos los reportes',
+        onPress: () => router.push('/admin-reports'),
+        isAdmin: true,
+      });
+    }
+
+    items.push(
+      {
+        icon: 'settings-outline',
+        title: 'Configuración de Cuenta',
+        subtitle: 'Cambiar contraseña y gestionar cuenta',
+        onPress: () => router.push('/account-settings'),
+      },
+      {
+        icon: 'notifications-outline',
+        title: 'Notificaciones',
+        subtitle: 'Configurar notificaciones',
+        onPress: () => Alert.alert('Próximamente', 'Esta función estará disponible pronto'),
+      },
+      {
+        icon: 'help-circle-outline',
+        title: 'Ayuda y Soporte',
+        subtitle: 'Obtén ayuda',
+        onPress: () => Alert.alert('Próximamente', 'Esta función estará disponible pronto'),
+      },
+      {
+        icon: 'information-circle-outline',
+        title: 'Acerca de',
+        subtitle: 'Versión 1.0.0',
+        onPress: () => Alert.alert('Sistema de Seguridad Ciudadana', 'Versión 1.0.0\n\nDesarrollado para mantener segura a tu comunidad.'),
+      }
+    );
+
+    return items;
+  };
+
+  const menuItems = getMenuItems();
 
   return (
     <ScrollView style={styles.container}>
@@ -228,14 +286,29 @@ export default function ProfileScreen() {
         {menuItems.map((item, index) => (
           <TouchableOpacity
             key={index}
-            style={styles.menuItem}
+            style={[
+              styles.menuItem,
+              item.isAdmin && styles.menuItemAdmin,
+            ]}
             onPress={item.onPress}
           >
-            <View style={styles.menuIconContainer}>
-              <Ionicons name={item.icon} size={24} color="#007AFF" />
+            <View style={[
+              styles.menuIconContainer,
+              item.isAdmin && styles.menuIconContainerAdmin,
+            ]}>
+              <Ionicons
+                name={item.icon}
+                size={24}
+                color={item.isAdmin ? '#FF9500' : '#007AFF'}
+              />
             </View>
             <View style={styles.menuTextContainer}>
-              <Text style={styles.menuTitle}>{item.title}</Text>
+              <Text style={[
+                styles.menuTitle,
+                item.isAdmin && styles.menuTitleAdmin,
+              ]}>
+                {item.title}
+              </Text>
               <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#ccc" />
@@ -396,6 +469,16 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#333',
     marginBottom: 2,
+  },
+  menuTitleAdmin: {
+    color: '#FF9500',
+    fontWeight: '600',
+  },
+  menuItemAdmin: {
+    backgroundColor: '#FFF9F0',
+  },
+  menuIconContainerAdmin: {
+    backgroundColor: '#FFE5CC',
   },
   menuSubtitle: {
     fontSize: 13,

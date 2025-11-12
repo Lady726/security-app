@@ -129,14 +129,16 @@ export const useReports = () => {
 
   const createReport = async (reportData) => {
     try {
+      // SIEMPRE incluir user_id (incluso si es anónimo)
+      // El campo is_anonymous controla la visibilidad, no user_id
+      const reportToCreate = {
+        ...reportData,
+        user_id: user.id, // Siempre guardamos quién lo creó
+      };
+
       const { data, error } = await supabase
         .from('reports')
-        .insert([
-          {
-            ...reportData,
-            user_id: user.id,
-          },
-        ])
+        .insert([reportToCreate])
         .select()
         .single();
 
@@ -363,6 +365,23 @@ export const useReports = () => {
     }
   };
 
+  const updateReportStatus = async (reportId, newStatus) => {
+    try {
+      const { data, error } = await supabase
+        .from('reports')
+        .update({ status: newStatus })
+        .eq('id', reportId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error updating report status:', error);
+      return { data: null, error };
+    }
+  };
+
   return {
     reports,
     loading,
@@ -374,6 +393,7 @@ export const useReports = () => {
     toggleLike,
     addReview,
     getReportReviews,
+    updateReportStatus,
   };
 };
 

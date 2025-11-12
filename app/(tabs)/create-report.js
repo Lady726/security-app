@@ -10,6 +10,7 @@ import {
   Image,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -30,9 +31,11 @@ export default function CreateReportScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
+  const [otherCategory, setOtherCategory] = useState('');
   const [images, setImages] = useState([]);
   const [location, setLocation] = useState(null);
   const [address, setAddress] = useState('');
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [loading, setLoading] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
 
@@ -92,7 +95,7 @@ export default function CreateReportScreen() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsMultipleSelection: false,
         quality: 0.8,
         allowsEditing: true,
@@ -151,6 +154,11 @@ export default function CreateReportScreen() {
       return;
     }
 
+    if (category === 'otro' && !otherCategory.trim()) {
+      Alert.alert('Error', 'Por favor especifica el tipo de incidente');
+      return;
+    }
+
     if (!location) {
       Alert.alert('Error', 'No se pudo obtener tu ubicación');
       return;
@@ -164,10 +172,11 @@ export default function CreateReportScreen() {
       const { data: report, error: reportError } = await createReport({
         title: title.trim(),
         description: description.trim(),
-        category,
+        category: category === 'otro' ? otherCategory.trim() : category,
         latitude: location.latitude,
         longitude: location.longitude,
         address: address || null,
+        is_anonymous: isAnonymous,
       });
 
       if (reportError) {
@@ -244,7 +253,9 @@ export default function CreateReportScreen() {
     setTitle('');
     setDescription('');
     setCategory('');
+    setOtherCategory('');
     setImages([]);
+    setIsAnonymous(false);
     getCurrentLocation(); // Refrescar ubicación
     if (goHome) {
       router.push('/(tabs)');
@@ -321,6 +332,18 @@ export default function CreateReportScreen() {
           ))}
         </View>
 
+        {category === 'otro' && (
+          <View style={styles.otherCategoryContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Especifica el tipo de incidente (ej: Inundación, Falta de luz, etc.)"
+              value={otherCategory}
+              onChangeText={setOtherCategory}
+              maxLength={50}
+            />
+          </View>
+        )}
+
         <Text style={styles.sectionTitle}>Ubicación</Text>
         <View style={styles.locationContainer}>
           {gettingLocation ? (
@@ -343,6 +366,31 @@ export default function CreateReportScreen() {
           <TouchableOpacity onPress={getCurrentLocation}>
             <Ionicons name="refresh" size={24} color="#007AFF" />
           </TouchableOpacity>
+        </View>
+
+        <View style={styles.anonymousContainer}>
+          <View style={styles.anonymousInfo}>
+            <Ionicons
+              name={isAnonymous ? "eye-off" : "eye"}
+              size={24}
+              color={isAnonymous ? "#FF9500" : "#007AFF"}
+            />
+            <View style={styles.anonymousTextContainer}>
+              <Text style={styles.anonymousTitle}>Reporte Anónimo</Text>
+              <Text style={styles.anonymousDescription}>
+                {isAnonymous
+                  ? "Tu identidad no será visible en este reporte"
+                  : "Tu nombre aparecerá en el reporte"}
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={isAnonymous}
+            onValueChange={setIsAnonymous}
+            trackColor={{ false: '#E0E0E0', true: '#FF9500' }}
+            thumbColor={isAnonymous ? '#fff' : '#f4f3f4'}
+            ios_backgroundColor="#E0E0E0"
+          />
         </View>
 
         <Text style={styles.sectionTitle}>Imágenes (Opcional)</Text>
@@ -450,6 +498,9 @@ const styles = StyleSheet.create({
   categoryButtonTextActive: {
     color: '#fff',
   },
+  otherCategoryContainer: {
+    marginBottom: 20,
+  },
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -477,6 +528,37 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: '#999',
+  },
+  anonymousContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginBottom: 20,
+  },
+  anonymousInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  anonymousTextContainer: {
+    flex: 1,
+  },
+  anonymousTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 3,
+  },
+  anonymousDescription: {
+    fontSize: 12,
+    color: '#666',
+    lineHeight: 16,
   },
   imagesContainer: {
     flexDirection: 'row',

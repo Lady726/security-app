@@ -299,10 +299,21 @@ export default function ReportDetailsScreen() {
 
           <View style={styles.meta}>
             <View style={styles.metaItem}>
-              <Ionicons name="person-circle-outline" size={18} color="#666" />
-              <Text style={styles.metaText}>
-                {report.profiles?.full_name || 'Usuario'}
-              </Text>
+              {report.is_anonymous ? (
+                <>
+                  <Ionicons name="eye-off" size={18} color="#FF9500" />
+                  <Text style={[styles.metaText, { color: '#FF9500' }]}>
+                    Usuario Anónimo
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="person-circle-outline" size={18} color="#666" />
+                  <Text style={styles.metaText}>
+                    {report.profiles?.full_name || 'Usuario'}
+                  </Text>
+                </>
+              )}
             </View>
             <View style={styles.metaItem}>
               <Ionicons name="time-outline" size={18} color="#666" />

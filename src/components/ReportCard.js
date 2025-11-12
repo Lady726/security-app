@@ -95,19 +95,30 @@ export default function ReportCard({ report, onPress, onLike, isLiked }) {
 
         <View style={styles.footer}>
           <View style={styles.userInfo}>
-            {report.profiles?.avatar_url ? (
-              <Image
-                source={{ uri: report.profiles.avatar_url }}
-                style={styles.avatar}
-              />
+            {report.is_anonymous ? (
+              <>
+                <View style={[styles.avatarPlaceholder, { backgroundColor: '#FF9500' }]}>
+                  <Ionicons name="eye-off" size={16} color="#fff" />
+                </View>
+                <Text style={styles.userName}>Usuario Anónimo</Text>
+              </>
             ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Ionicons name="person" size={16} color="#fff" />
-              </View>
+              <>
+                {report.profiles?.avatar_url ? (
+                  <Image
+                    source={{ uri: report.profiles.avatar_url }}
+                    style={styles.avatar}
+                  />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Ionicons name="person" size={16} color="#fff" />
+                  </View>
+                )}
+                <Text style={styles.userName}>
+                  {report.profiles?.full_name || 'Usuario'}
+                </Text>
+              </>
             )}
-            <Text style={styles.userName}>
-              {report.profiles?.full_name || 'Usuario'}
-            </Text>
           </View>
 
           <View style={styles.actions}>
