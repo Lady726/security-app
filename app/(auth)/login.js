@@ -61,7 +61,7 @@ export default function LoginScreen() {
           placeholder="Contraseña"
           value={password}
           onChangeText={setPassword}
-          secureTextEntry
+          secureTextEntry={false}
         />
 
         <TouchableOpacity
@@ -75,6 +75,14 @@ export default function LoginScreen() {
             <Text style={styles.buttonText}>Iniciar Sesión</Text>
           )}
         </TouchableOpacity>
+
+        <Link href="/(auth)/forgot-password" asChild>
+          <TouchableOpacity>
+            <Text style={styles.forgotPasswordText}>
+              ¿Olvidaste tu contraseña?
+            </Text>
+          </TouchableOpacity>
+        </Link>
 
         <Link href="/(auth)/register" asChild>
           <TouchableOpacity>
@@ -139,6 +147,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  forgotPasswordText: {
+    color: '#007AFF',
+    textAlign: 'center',
+    marginTop: 15,
+    fontSize: 14,
   },
   linkText: {
     color: '#007AFF',

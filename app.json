@@ -47,7 +47,9 @@
         "googleMaps": {
           "apiKey": "AIzaSyD60WdcQ0FI3bkMnPmb-0OwoXkkjg1phn0"
         }
-      }
+      },
+      "allowBackup": true,
+      "userInterfaceStyle": "automatic"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -61,6 +63,7 @@
       ],
       "expo-router"
     ],
+    "scheme": "seguridadciudadana",
     "extra": {
       "router": {},
       "eas": {

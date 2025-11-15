@@ -93,7 +93,7 @@ export default function RegisterScreen() {
             placeholder="Contraseña"
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
+            secureTextEntry={false}
           />
 
           <TextInput
@@ -101,7 +101,7 @@ export default function RegisterScreen() {
             placeholder="Confirmar contraseña"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            secureTextEntry
+            secureTextEntry={false}
           />
 
           <TouchableOpacity
