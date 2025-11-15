@@ -13,6 +13,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../src/config/supabase';
 
@@ -23,6 +24,8 @@ export default function ForgotPasswordScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { resetPassword } = useAuth();
   const router = useRouter();
 
@@ -140,6 +143,7 @@ export default function ForgotPasswordScreen() {
           <TextInput
             style={styles.input}
             placeholder="Correo electrónico"
+            placeholderTextColor="#999"
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -152,6 +156,7 @@ export default function ForgotPasswordScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Código de 6 dígitos"
+                placeholderTextColor="#999"
                 value={otpCode}
                 onChangeText={setOtpCode}
                 keyboardType="number-pad"
@@ -159,23 +164,51 @@ export default function ForgotPasswordScreen() {
                 editable={!loading}
               />
 
-              <TextInput
-                style={styles.input}
-                placeholder="Nueva contraseña"
-                value={newPassword}
-                onChangeText={setNewPassword}
-                secureTextEntry={false}
-                editable={!loading}
-              />
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Nueva contraseña"
+                  placeholderTextColor="#999"
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  secureTextEntry={!showPassword}
+                  editable={!loading}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => setShowPassword(!showPassword)}
+                  disabled={loading}
+                >
+                  <Ionicons
+                    name={showPassword ? 'eye-off' : 'eye'}
+                    size={24}
+                    color="#666"
+                  />
+                </TouchableOpacity>
+              </View>
 
-              <TextInput
-                style={styles.input}
-                placeholder="Confirmar contraseña"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry={false}
-                editable={!loading}
-              />
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Confirmar contraseña"
+                  placeholderTextColor="#999"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                  editable={!loading}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  disabled={loading}
+                >
+                  <Ionicons
+                    name={showConfirmPassword ? 'eye-off' : 'eye'}
+                    size={24}
+                    color="#666"
+                  />
+                </TouchableOpacity>
+              </View>
             </>
           )}
 
@@ -255,6 +288,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: '#ddd',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 15,
+    fontSize: 16,
+  },
+  eyeIcon: {
+    padding: 15,
   },
   button: {
     backgroundColor: '#007AFF',
